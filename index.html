@@ -67,6 +67,7 @@
         bottom: 0; /* Align to the bottom */
         left: 0;
         right: 0;
+        text-align: start;
         color: #fff; /* Text color */
         padding: 10px; /* Add padding for spacing */
         box-sizing: border-box; /* Ensure padding doesn't affect width */
@@ -78,6 +79,16 @@
           rgba(0, 0, 0, 0.8) 100%
         );
         opacity: 0.9; /* Control opacity */
+      }
+      .overlay h3 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .overlay p {
+        font-size: 12px;
+        position: relative;
+        left: -4px;
+        margin: 0.5em;
       }
 
       .image-container:hover .overlay {
@@ -135,7 +146,7 @@
         margin: 0.25em;
         margin-top: 0.5em;
         margin-bottom: 2em;
-        color: #BEC2C4;
+        color: #bec2c4;
         padding: 0px 20px;
         font-size: 12px;
       }
@@ -317,8 +328,8 @@
 
             <img :src="image.small" :alt="image.description" />
             <div class="overlay">
-                <div>{{ image.author }}</div>
-                <div>{{ image.location }}</div>
+                <h3>{{ image.author }}</h3>
+                <p>{{ image.location }}</p>
             </div>
         </div>
     </div>
