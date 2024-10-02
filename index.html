@@ -18,23 +18,39 @@
       .search-bar {
         display: flex;
         justify-content: center;
-        margin: 20px 0;
+
+        background-color: #dde3ea;
+        padding: 80px;
         position: relative;
         z-index: 10; /* Ensures the search bar stays above the images */
       }
+      .search-bar input {
+        width: 100%;
+        border: none;
+        border-radius: 4px;
+        background-color: #fff;
+      }
+      .search-bar button {
+        display: none;
+      }
 
       /* Grid Styles */
+
       .image-grid {
+        position: relative;
+        top: -25px;
         display: grid;
         grid-template-columns: repeat(3, 1fr); /* Fixed 3 columns */
-        gap: 15px;
-        padding: 0 10px;
+        gap: 40px;
+        padding: 0 250px;
         margin-bottom: 20px;
+        z-index: 999;
       }
 
       .image-container {
         position: relative;
         overflow: hidden;
+        height: min-content;
         border-radius: 8px;
       }
 
@@ -43,15 +59,16 @@
         height: auto;
         border-radius: 8px;
         display: block;
+        cursor: pointer;
       }
 
-      /* Overlay Styles */
       .overlay {
-        position: absolute;
-        bottom: 0; /* Align to the bottom */
+        position: absolute; /* Change to absolute */
+        bottom: 7%; /* Align to the bottom */
         left: 0; /* Align to the left */
         right: 0; /* Stretch across */
         color: #fff; /* Text color */
+
         padding: 10px; /* Add padding for spacing */
         box-sizing: border-box; /* Ensure padding doesn't affect width */
       }
@@ -75,12 +92,11 @@
       }
 
       .modal-content {
-        background-color: #fff;
-        padding: 20px;
         border-radius: 8px;
         max-width: 600px;
         width: 100%;
         text-align: center;
+        position: relative; /* Make it relative for positioning overlay */
       }
 
       .modal img {
@@ -89,13 +105,15 @@
         border-radius: 8px;
       }
 
-      .close-btn {
-        background-color: red;
-        color: white;
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+      /* Image Info Overlay in Modal */
+      .modal-overlay {
+        position: absolute;
+        bottom: 0; /* Align to the bottom */
+        left: 0; /* Align to the left */
+
+        color: #fff; /* Text color */
+        padding: 10px; /* Add padding for spacing */
+        box-sizing: border-box; /* Ensure padding doesn't affect width */
       }
 
       /* Skeleton Loader Styles */
@@ -171,13 +189,13 @@
                   : "Unknown Location",
               }));
 
-              // Simulate a 2-second loading delay using setTimeout
+              // Simulate a 1-second loading delay using setTimeout
               setTimeout(() => {
                 this.images = [...this.images, ...newImages]; // Append new images
                 this.page++; // Increment page for next fetch
                 this.isLoading = false; // Stop loading after images are fetched
                 this.isFetching = false;
-              }, 2000); // 2-second delay
+              }, 1000); // 1-second delay
             } catch (error) {
               console.log("Error fetching images", error);
               this.error = "Fetching failed ...please try again later...";
@@ -202,13 +220,16 @@
                 full: item.urls.full,
                 description: item.alt_description,
                 author: item.user.name,
-                location: item.location ? item.location.name : "Unknown Location",
+                location: item.location
+                  ? item.location.name
+                  : "Unknown Location",
               }));
               this.isLoading = false;
               this.isFetching = false;
             } catch (error) {
               console.log("Error fetching search results", error);
-              this.error = "Fetching search results failed. Please try again later.";
+              this.error =
+                "Fetching search results failed. Please try again later.";
               this.isLoading = false;
               this.isFetching = false;
             }
@@ -242,61 +263,54 @@
           window.removeEventListener("scroll", this.handleScroll);
         },
         template: `
-    <div>
-        <div class="search-bar">
-            <input
-                v-model="query"
-                @keyup.enter="searchImages" 
-                type="text"
-                placeholder="Search for images..."
-                style="padding: 8px; width: 300px;"
-            />
-            <button @click="searchImages" style="padding: 8px; margin-left: 10px;">Search</button>
+<div>
+    <div class="search-bar">
+        <input
+            v-model="query"
+            @keyup.enter="searchImages" 
+            type="text"
+            placeholder="Search for photo"
+            style="padding: 8px; width: 300px;"
+        />
+        <button @click="searchImages">Search</button>
+    </div>
+
+    <div class="image-grid">
+        <!-- Show skeleton loaders based on perPage -->
+        <div v-if="isLoading" v-for="n in perPage" :key="n" class="skeleton">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-text skeleton-author"></div>
+            <div class="skeleton-text skeleton-location"></div>
         </div>
 
-        <div v-if="error">{{ error }}</div>
-        
-        <div v-else>
-            <!-- Skeleton Loader: Only show when images are loading -->
-            <div v-if="isLoading && images.length === 0" class="image-grid">
-                <div class="image-container skeleton" v-for="n in 6" :key="n">
-                    <div class="skeleton-image"></div>
-                    <div class="overlay">
-                        <div class="skeleton-text skeleton-author"></div>
-                        <div class="skeleton-text skeleton-location"></div>
-                    </div>
-                </div>
-            </div>
+        <div v-if="error" class="error">{{ error }}</div>
+        <div
+            v-for="image in images"
+            :key="image.small"
+            class="image-container"
+            @click="openModal(image)"
+        >
 
-            <!-- Images Grid -->
-            <div class="image-grid">
-                <div
-                    class="image-container"
-                    v-for="(image, index) in images"
-                    :key="index"
-                    @click="openModal(image)"
-                >
-                    <img :src="image.small" :alt="image.description" />
-                    <div class="overlay">
-                        <h3>{{ image.author }}</h3>
-                        <p>{{ image.location }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal for image preview -->
-            <div v-if="modalImage" class="modal" @click.self="closeModal">
-                <div class="modal-content">
-                    <img :src="modalImage.full" :alt="modalImage.description" />
-                    <button class="close-btn" @click="closeModal">Close</button>
-                </div>
+            <img :src="image.small" :alt="image.description" />
+            <div class="overlay">
+                <div>{{ image.author }}</div>
+                <div>{{ image.location }}</div>
             </div>
         </div>
     </div>
-`
-,
-      });
 
+    <div v-if="modalImage" class="modal" @click="closeModal">
+        <div class="modal-content" @click.stop>
+            <img :src="modalImage.full" :alt="modalImage.description" />
+            <div class="modal-overlay">
+                <div>{{ modalImage.author }}</div>
+                <div>{{ modalImage.location }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+`,
+      });
       app.mount("#app");
     </script>
   </body>
