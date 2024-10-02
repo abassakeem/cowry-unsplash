@@ -18,7 +18,6 @@
       .search-bar {
         display: flex;
         justify-content: center;
-
         background-color: #dde3ea;
         padding: 80px;
         position: relative;
@@ -35,7 +34,6 @@
       }
 
       /* Grid Styles */
-
       .image-grid {
         position: relative;
         top: -25px;
@@ -184,6 +182,7 @@
   </head>
   <body>
     <div id="app"></div>
+
     <script type="text/javascript">
       const app = Vue.createApp({
         data() {
@@ -196,6 +195,8 @@
             perPage: 6,
             query: "", // Holds the search query
             isFetching: false, // Prevents multiple fetch requests
+            searching: false, // Flag for search in progress
+            searchCompleted: false, // Flag to show search completion
           };
         },
         methods: {
@@ -224,7 +225,6 @@
                   : "Unknown Location",
               }));
 
-              // Simulate a 1-second loading delay using setTimeout
               setTimeout(() => {
                 this.images = [...this.images, ...newImages]; // Append new images
                 this.page++; // Increment page for next fetch
@@ -242,6 +242,8 @@
             if (this.isFetching) return; // Prevent duplicate fetching
             this.isFetching = true; // Set fetching state to true
             this.isLoading = true; // Trigger loading state
+            this.searching = true; // Start search state
+            this.searchCompleted = false; // Reset search completion
             this.page = 1; // Reset page for new search
             this.images = []; // Clear previous images
 
@@ -250,102 +252,91 @@
                 `https://api.unsplash.com/search/photos/?client_id=ruLlONT6ashgc3z7y0B_35EyFnpUqcfbu0sJW4D96y4&query=${this.query}&page=${this.page}&per_page=${this.perPage}`
               );
               const data = await response.json();
-              this.images = data.results.map((item) => ({
-                small: item.urls.small,
-                full: item.urls.full,
-                description: item.alt_description,
-                author: item.user.name,
-                location: item.location
-                  ? item.location.name
-                  : "Unknown Location",
-              }));
-              this.isLoading = false;
-              this.isFetching = false;
+
+              // Delay displaying the results after a small timeout to show "Searching" text
+              setTimeout(() => {
+                this.images = data.results.map((item) => ({
+                  small: item.urls.small,
+                  full: item.urls.full,
+                  description: item.alt_description,
+                  author: item.user.name,
+                  location: item.location
+                    ? item.location.name
+                    : "Unknown Location",
+                }));
+                this.isLoading = false;
+                this.isFetching = false;
+                this.searching = false; // Stop search state
+                this.searchCompleted = true; // Mark search as complete
+              }, 1500); // 1.5 seconds delay for "Searching" state
             } catch (error) {
               console.log("Error fetching search results", error);
               this.error =
-                "Fetching search results failed. Please try again later.";
+                "Fetching search results failed ...please try again later...";
               this.isLoading = false;
               this.isFetching = false;
+              this.searching = false;
             }
           },
           openModal(image) {
-            this.modalImage = image; // Set the clicked image's data to modalImage
+            this.modalImage = image;
           },
           closeModal() {
-            this.modalImage = null; // Clear the modalImage to close the modal
-          },
-          handleScroll() {
-            const scrollHeight = document.documentElement.scrollHeight;
-            const scrollTop = document.documentElement.scrollTop;
-            const clientHeight = document.documentElement.clientHeight;
-
-            if (scrollTop + clientHeight >= scrollHeight - 10) {
-              // If scrolled to the bottom, fetch more images
-              this.fetchImages();
-            }
+            this.modalImage = null;
           },
         },
         mounted() {
-          // Initial fetch of images
-          this.fetchImages();
-
-          // Add scroll event listener
-          window.addEventListener("scroll", this.handleScroll);
-        },
-        unmounted() {
-          // Clean up event listener when component is destroyed
-          window.removeEventListener("scroll", this.handleScroll);
+          this.fetchImages(); // Fetch initial images
         },
         template: `
-<div>
-    <div class="search-bar">
-        <input
-            v-model="query"
-            @keyup.enter="searchImages" 
-            type="text"
-            placeholder="Search for photo"
-            style="padding: 8px; width: 300px;"
-        />
-        <button @click="searchImages">Search</button>
-    </div>
-
-    <div class="image-grid">
-        <!-- Show skeleton loaders based on perPage -->
-        <div v-if="isLoading" v-for="n in perPage" :key="n" class="skeleton">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-text skeleton-author"></div>
-            <div class="skeleton-text skeleton-location"></div>
-        </div>
-
-        <div v-if="error" class="error">{{ error }}</div>
-        <div
-            v-for="image in images"
-            :key="image.small"
-            class="image-container"
-            @click="openModal(image)"
-        >
-
-            <img :src="image.small" :alt="image.description" />
-            <div class="overlay">
-                <h3>{{ image.author }}</h3>
-                <p>{{ image.location }}</p>
+          <div>
+            <div class="search-bar">
+              <input
+                v-model="query"
+                type="text"
+                placeholder="Search images..."
+                @keydown.enter="searchImages"
+              />
+              <button @click="searchImages">Search</button>
             </div>
-        </div>
-    </div>
 
-    <div v-if="modalImage" class="modal" @click="closeModal">
-        <div class="modal-content" @click.stop>
-            <img :src="modalImage.full" :alt="modalImage.description" />
-            <div class="modal-overlay">
-                <h3>{{ modalImage.author }}</h3>
-                <p>{{ modalImage.location }}</p>
+            <!-- Display Searching Text -->
+            <h1 v-if="searching">Searching...</h1>
+
+            <!-- Display Search Results Header -->
+            <h1 v-if="!searching && query && searchCompleted">Search Results</h1>
+
+            <!-- Display Images -->
+            <div class="image-grid">
+              <div
+                v-for="(image, index) in images"
+                :key="index"
+                class="image-container"
+                @click="openModal(image)"
+              >
+                <img :src="image.small" alt="Image" />
+                <div class="overlay">
+                  <h3>{{ image.author }}</h3>
+                  <p>{{ image.location }}</p>
+                </div>
+              </div>
             </div>
-        </div>
-    </div>
-</div>
-`,
+
+            <!-- Modal for Full-Size Image -->
+            <div v-if="modalImage" class="modal" @click="closeModal">
+              <div class="modal-content">
+                <img :src="modalImage.full" alt="Full Image" />
+                <div class="modal-overlay">
+                  <h3>{{ modalImage.author }}</h3>
+                  <p>{{ modalImage.location }}</p>
+                  <p>{{ modalImage.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `,
       });
+
       app.mount("#app");
     </script>
   </body>
