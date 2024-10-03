@@ -60,6 +60,21 @@ body {
   z-index: 999;
 }
 
+/* Media Query for Smaller Screens */
+@media (max-width: 768px) {
+
+  .top{
+    padding: 0;
+  }
+  .image-grid {
+    grid-template-columns: 1fr; /* Change to 1 column */
+    padding: 0 20px; /* Adjust padding for smaller screens */
+  }
+}
+.image-grid{
+  top: 25px;
+}
+
 .image-container {
   position: relative;
   overflow: hidden;
@@ -213,8 +228,6 @@ body {
 .image-grid .skeleton .skeleton-author,
 .image-grid .skeleton .skeleton-location {
   height: 16px; /* Matches the author/location text height */
-  
-  
 }
 
 .image-grid .skeleton .skeleton-location {
@@ -222,10 +235,9 @@ body {
   background-color: #a29f9f;
   border-radius: 4px;
 }
-.image-grid .skeleton .skeleton-author{
-  
+
+.image-grid .skeleton .skeleton-author {
   width: 60px;
   border-radius: 4px;
-  
   background-color: #a29f9f;
 }
